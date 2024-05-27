@@ -8,4 +8,4 @@
   })
 </script>
 
-<h1>{text}</h1>
+<h1 class="text-indigo-700 font-bold text-lg">{text}</h1>
