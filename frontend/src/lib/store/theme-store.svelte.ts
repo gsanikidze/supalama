@@ -3,6 +3,7 @@ type ITheme = 'light' | 'dark';
 export default class Theme {
   private USER_SELECTED_THEME_KEY = 'USER_SELECTED_THEME';
   private _current: ITheme = $state<ITheme>('light');
+  static ContextName = "theme"
 
   constructor() {
     const userTheme = localStorage.getItem(this.USER_SELECTED_THEME_KEY) as ITheme | undefined;

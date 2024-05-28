@@ -3,8 +3,11 @@
 	import '../app.css';
 	import Theme from '$lib/store/theme-store.svelte';
 	import * as Menubar from '$lib/components/ui/menubar';
+	import { setContext } from 'svelte';
 
 	const theme = new Theme();
+
+  setContext(Theme.ContextName, theme)
 </script>
 
 <div>
