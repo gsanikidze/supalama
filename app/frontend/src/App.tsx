@@ -48,7 +48,7 @@ function App() {
                 Theme - {conf.theme}
             </div>
             <Button onClick={() => dispatch(appConfig.actions.toggleTheme())}>
-                Toggle theme
+                Toggle theme!
             </Button>
         </div>
     )
