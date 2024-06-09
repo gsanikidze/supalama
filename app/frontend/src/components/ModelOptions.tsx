@@ -1,15 +1,28 @@
 import { Slider } from "@/components/ui/slider";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
-export default function ModelOptions() {
-  const [values, setValues] = useState<Record<string, number>>({})
+type ParameterValues = Record<string, number>
+
+interface Props {
+  onChange?: (val: ParameterValues) => void
+  initialValues?: ParameterValues
+}
+
+export default function ModelOptions({ onChange, initialValues = {} }: Props) {
+  const [values, setValues] = useState<ParameterValues>(initialValues)
 
   const onValueChange = useCallback((parameter: string) => ([newValue]: [number]) => {
-    setValues((prev) => ({
-      ...prev,
-      [parameter]: newValue,
-    }))
-  }, [])
+    setValues((prev) => {
+      const newSt = {
+        ...prev,
+        [parameter]: newValue,
+      }
+
+      onChange?.(newSt)
+
+      return newSt
+    })
+  }, [onChange])
 
   const options = useMemo(() => {
     const opts = [
@@ -100,14 +113,23 @@ export default function ModelOptions() {
     ]
 
     opts.forEach((opt) => {
-      onValueChange(opt.parameter)([opt.default])
+      setValues((st) => {
+        if (st[opt.parameter] === undefined) {
+          return {
+            ...st,
+            [opt.parameter]: opt.default,
+          }
+        }
+
+        return st
+      })
     })
 
     return opts
   }, [])
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="grid grid-cols-2 gap-6">
       {
         options.map((opt) => (
           <div key={opt.parameter}>
@@ -123,7 +145,7 @@ export default function ModelOptions() {
               onValueChange={onValueChange(opt.parameter)}
               min={opt.min}
               max={opt.max}
-              defaultValue={[opt.default]}
+              defaultValue={[values[opt.parameter]]}
               step={opt.step}
             />
           </div>

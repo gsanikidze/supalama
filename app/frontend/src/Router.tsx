@@ -4,6 +4,7 @@ import WorkflowBuilder from "./screens/WorkflowBuilder";
 import { useLayoutEffect, useMemo } from "react";
 import { useSelector } from "react-redux";
 import { appConfig } from '@/store'
+import Chat from "./screens/Chat/Chat";
 
 export default function Router() {
   const conf = useSelector(appConfig.select)
@@ -16,6 +17,10 @@ export default function Router() {
     {
       path: '/build-workflow',
       element: <WorkflowBuilder />,
+    },
+    {
+      path: '/chat',
+      element: <Chat />,
     },
   ]), [])
 
