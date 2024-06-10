@@ -1,7 +1,8 @@
 import { Slider } from "@/components/ui/slider";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { ollama } from "wailsjs/go/models";
 
-type ParameterValues = Record<string, number>
+type ParameterValues = Partial<ollama.ModelOptions>
 
 interface Props {
   onChange?: (val: ParameterValues) => void
@@ -114,7 +115,7 @@ export default function ModelOptions({ onChange, initialValues = {} }: Props) {
 
     opts.forEach((opt) => {
       setValues((st) => {
-        if (st[opt.parameter] === undefined) {
+        if (st[opt.parameter as keyof ollama.ModelOptions] === undefined) {
           return {
             ...st,
             [opt.parameter]: opt.default,
@@ -138,14 +139,14 @@ export default function ModelOptions({ onChange, initialValues = {} }: Props) {
                 {opt.parameter}: 
               </kbd>
               <span>
-                {values[opt.parameter]}
+                {values[opt.parameter as keyof ollama.ModelOptions]}
               </span>
             </div>
             <Slider
               onValueChange={onValueChange(opt.parameter)}
               min={opt.min}
               max={opt.max}
-              defaultValue={[values[opt.parameter]]}
+              defaultValue={[values[opt.parameter as keyof ollama.ModelOptions] as number]}
               step={opt.step}
             />
           </div>

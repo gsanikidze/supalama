@@ -1,9 +1,10 @@
-import { ChangeEvent, FormEventHandler, useCallback, useState } from "react";
+import { ChangeEvent, useCallback, useState } from "react";
 import { SendMessage } from "wailsjs/go/main/App";
+import { ollama } from "wailsjs/go/models";
 
 export default function useChat(){
   const [inputVal, setInputVal] = useState('')
-  const [modelOptions, setModelOptions] = useState<Record<string, number>>({})
+  const [modelOptions, setModelOptions] = useState<Partial<ollama.ModelOptions>>({})
   const [chatContext, setChatContext] = useState<number[]>([])
   const [messages, setMessages] = useState<{
     from: 'user' | 'bot';
@@ -17,7 +18,11 @@ export default function useChat(){
   }, [])
 
   const onSend = useCallback(() => {
-    SendMessage(inputVal, modelOptions, chatContext).then(({ Messages, Context }) => {
+    SendMessage(
+      inputVal, 
+      modelOptions as ollama.ModelOptions,
+      chatContext,
+    ).then(({ Messages, Context }) => {
 
       setMessages((st) => {
 

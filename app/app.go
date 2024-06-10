@@ -1,12 +1,12 @@
 package main
 
 import (
-	"bytes"
+	"app/ollama"
 	"context"
-	"encoding/json"
-	"net/http"
+	"log"
 
 	"github.com/google/uuid"
+	"github.com/joho/godotenv"
 )
 
 // App struct
@@ -22,6 +22,11 @@ func NewApp() *App {
 // startup is called when the app starts. The context is saved
 // so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
+	err := godotenv.Load()
+	if err != nil {
+		log.Panic("Error loading .env file", err)
+	}
+
 	a.ctx = ctx
 }
 
@@ -36,70 +41,18 @@ type Response struct {
 	Context  []int
 }
 
-type OllamaPayload struct {
-	Model   string             `json:"model"`
-	Stream  bool               `json:"stream"`
-	Prompt  string             `json:"prompt"`
-	Options map[string]float32 `json:"options"`
-	Context []int              `json:"context"`
-}
-
-type OllamaResponse struct {
-	CreatedAt     string `json:"created_at"`
-	Model         string `json:"model"`
-	Response      string `json:"response"`
-	Context       []int  `json:"context"`
-	TotalDuration int    `json:"total_duration"`
-	Status        string `json:"status"`
-	Done          bool   `json:"done"`
-}
-
-func OllamaGenerate(prompt string, options map[string]float32, context []int) (OllamaResponse, error) {
-	res := OllamaResponse{}
-	endpoint := "http://localhost:11434/api/generate"
-
-	payload := OllamaPayload{
-		Model:   "llama3",
-		Stream:  false,
-		Options: options,
-		Prompt:  prompt,
-		Context: context,
-	}
-
-	body, err := json.Marshal(payload)
-
-	if err != nil {
-		return res, err
-	}
-
-	r, err := http.Post(
-		endpoint,
-		"application/json",
-		bytes.NewBuffer(body),
-	)
-
-	if err != nil {
-		return res, err
-	}
-
-	defer r.Body.Close()
-
-	parseErr := json.NewDecoder(r.Body).Decode(&res)
-
-	if parseErr != nil {
-		return res, parseErr
-	}
-
-	return res, nil
-}
-
-// Greet returns a greeting for the given name
 func (a *App) SendMessage(
 	text string,
-	options map[string]float32,
+	options ollama.ModelOptions,
 	context []int,
 ) Response {
-	res, err := OllamaGenerate(text, options, context)
+	res, err := ollama.Generate(
+		ollama.GenerateArgs{
+			Prompt:  text,
+			Options: options,
+			Context: context,
+		},
+	)
 
 	if err != nil {
 		return Response{}
