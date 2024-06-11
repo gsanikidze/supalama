@@ -45,12 +45,14 @@ func (a *App) SendMessage(
 	text string,
 	options ollama.ModelOptions,
 	context []int,
+	model string,
 ) Response {
 	res, err := ollama.Generate(
 		ollama.GenerateArgs{
 			Prompt:  text,
 			Options: options,
 			Context: context,
+			Model:   model,
 		},
 	)
 
@@ -67,4 +69,28 @@ func (a *App) SendMessage(
 		Messages: messages,
 		Context:  res.Context,
 	}
+}
+
+func (a *App) GetModels() []ollama.LocalModel {
+	models, err := ollama.GetLocalModels()
+
+	if err != nil {
+		return []ollama.LocalModel{}
+	}
+
+	return models
+}
+
+func (a *App) GetFirstModel() ollama.LocalModel {
+	models, err := ollama.GetLocalModels()
+
+	if err != nil {
+		return ollama.LocalModel{}
+	}
+
+	if len(models) == 0 {
+		return ollama.LocalModel{}
+	}
+
+	return models[0]
 }

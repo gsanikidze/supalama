@@ -37,4 +37,25 @@ type GenerateArgs struct {
 	Prompt  string
 	Options ModelOptions
 	Context []int
+	Model   string
+}
+
+type LocalModelDetails struct {
+	Format            string   `json:"format"`
+	Family            string   `json:"family"`
+	ParameterSize     string   `json:"parameter_size"`
+	QuantizationLevel string   `json:"quantization_level"`
+	Families          []string `json:"families"`
+}
+
+type LocalModel struct {
+	Name       string            `json:"name"`
+	ModifiedAt string            `json:"modified_at"`
+	Size       int64             `json:"size"`
+	Digest     string            `json:"digest"`
+	Details    LocalModelDetails `json:"details"`
+}
+
+type LocalModelsResponse struct {
+	Models []LocalModel `json:"models"`
 }

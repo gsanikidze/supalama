@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import useChat from "./useChat";
+import ModelSelector from "@/components/ModelSelector";
+import { SlidersHorizontal } from "lucide-react";
 
 export default function Chat() {
   const {
@@ -13,36 +15,65 @@ export default function Chat() {
     modelOptions,
     setModelOptions,
     messages,
+    selectModel,
+    selectedModel,
   } = useChat()
 
   return (
-    <div className="p-4 relative">
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button className="absolute top-4 right-4" variant="outline">Chat options</Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-96 p-4">
-          <ModelOptions
-            onChange={setModelOptions}
-            initialValues={modelOptions}
-          />
-        </PopoverContent>
-      </Popover>
-      <div>
-        {
-          messages.map((i) => (
-            <ChatListItem key={i.id} from={i.from}>
-              {i.content}
-            </ChatListItem>
-          ))
-        }
+    <div>
+      <div
+        className="flex justify-end gap-2 p-4 sticky top-0 bg-background/30 backdrop-blur-lg"
+      >
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline">
+              {
+                selectedModel ? selectedModel.name : "Select Model"
+              }
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-96 p-4">
+            <ModelSelector
+              onSelect={selectModel}
+              defaultSelected={selectedModel}
+            />
+          </PopoverContent>
+        </Popover>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="icon">
+              <SlidersHorizontal />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-96 p-4">
+            <ModelOptions
+              onChange={setModelOptions}
+              initialValues={modelOptions}
+            />
+          </PopoverContent>
+        </Popover>
       </div>
-      <Textarea
-        placeholder="Type your message here."
-        onInput={onInput}
-        value={inputVal}
-      />
-      <Button onClick={onSend}>Send</Button>
+      <div className="p-4">
+        <div>
+          {
+            messages.map((i) => (
+              <ChatListItem
+                key={i.id}
+                from={i.from}
+                className={`w-10/12 mb-4 ${i.from === 'user' && 'ml-auto'}`}
+              >
+                {i.content}
+              </ChatListItem>
+            ))
+          }
+        </div>
+        <Textarea
+          placeholder="Type your message here."
+          onInput={onInput}
+          value={inputVal}
+        />
+        <Button className="mt-4" onClick={onSend}>Send</Button>
+      </div>
     </div>
   )
 }

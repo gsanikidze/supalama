@@ -3,4 +3,8 @@
 import {ollama} from '../models';
 import {main} from '../models';
 
-export function SendMessage(arg1:string,arg2:ollama.ModelOptions,arg3:Array<number>):Promise<main.Response>;
+export function GetFirstModel():Promise<ollama.LocalModel>;
+
+export function GetModels():Promise<Array<ollama.LocalModel>>;
+
+export function SendMessage(arg1:string,arg2:ollama.ModelOptions,arg3:Array<number>,arg4:string):Promise<main.Response>;

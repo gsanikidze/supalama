@@ -1,8 +1,9 @@
-import { ChangeEvent, useCallback, useState } from "react";
-import { SendMessage } from "wailsjs/go/main/App";
+import { ChangeEvent, useCallback, useEffect, useState } from "react";
+import { GetFirstModel, SendMessage } from "wailsjs/go/main/App";
 import { ollama } from "wailsjs/go/models";
 
 export default function useChat(){
+  const [selectedModel, selectModel] = useState<ollama.LocalModel>()
   const [inputVal, setInputVal] = useState('')
   const [modelOptions, setModelOptions] = useState<Partial<ollama.ModelOptions>>({})
   const [chatContext, setChatContext] = useState<number[]>([])
@@ -11,6 +12,12 @@ export default function useChat(){
     content: string;
     id: string;
   }[]>([])
+
+  useEffect(() => {
+    GetFirstModel().then((m) => {
+      selectModel(m)
+    })
+  }, [])
 
   const onInput = useCallback((e: ChangeEvent<HTMLTextAreaElement>) => {
     e.preventDefault()
@@ -22,6 +29,7 @@ export default function useChat(){
       inputVal, 
       modelOptions as ollama.ModelOptions,
       chatContext,
+      selectedModel!.name,
     ).then(({ Messages, Context }) => {
 
       setMessages((st) => {
@@ -54,5 +62,7 @@ export default function useChat(){
     setModelOptions,
     modelOptions,
     messages,
+    selectModel,
+    selectedModel
   };
 }

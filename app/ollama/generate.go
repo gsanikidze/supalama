@@ -13,7 +13,7 @@ func Generate(args GenerateArgs) (generateResponse, error) {
 	endpoint := fmt.Sprintf("%v/api/generate", env.OllamaDefaultServer())
 
 	payload := generatePayload{
-		Model:   "llama3",
+		Model:   args.Model,
 		Stream:  false,
 		Options: args.Options,
 		Prompt:  args.Prompt,
