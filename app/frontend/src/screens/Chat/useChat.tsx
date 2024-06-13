@@ -55,14 +55,21 @@ export default function useChat(){
     setInputVal('')    
   }, [inputVal, chatContext])
 
+  const onEnter: React.KeyboardEventHandler<HTMLTextAreaElement> = useCallback((e) => {
+    if (e.key === "Enter" && e.shiftKey === false) {
+      e.preventDefault()
+      onSend()
+    }
+  }, [onSend])
+
   return {
     onInput,
-    onSend,
     inputVal,
     setModelOptions,
     modelOptions,
     messages,
     selectModel,
-    selectedModel
+    selectedModel,
+    onEnter
   };
 }

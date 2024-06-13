@@ -1,27 +1,34 @@
-import { createBrowserRouter, createRoutesFromElements, Route, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Home from "./screens/Home";
 import WorkflowBuilder from "./screens/WorkflowBuilder";
 import { useLayoutEffect, useMemo } from "react";
 import { useSelector } from "react-redux";
 import { appConfig } from '@/store'
 import Chat from "./screens/Chat/Chat";
+import MainLayout from "./components/MainLayout";
 
 export default function Router() {
   const conf = useSelector(appConfig.select)
 
   const routes = useMemo(() => createBrowserRouter([
     {
-      path: '/',
-      element: <Home />,
-    },
-    {
-      path: '/build-workflow',
-      element: <WorkflowBuilder />,
-    },
-    {
-      path: '/chat',
-      element: <Chat />,
-    },
+      path: "/",
+      element: <MainLayout />,
+      children: [
+        {
+          path: '/',
+          element: <Home />,
+        },
+        {
+          path: '/build-workflow',
+          element: <WorkflowBuilder />,
+        },
+        {
+          path: '/chat',
+          element: <Chat />,
+        },
+      ]
+    }
   ]), [])
 
   useLayoutEffect(() => {

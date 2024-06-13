@@ -11,18 +11,18 @@ export default function Chat() {
   const {
     onInput,
     inputVal,
-    onSend,
     modelOptions,
     setModelOptions,
     messages,
     selectModel,
     selectedModel,
+    onEnter,
   } = useChat()
 
   return (
-    <div>
+    <div className="h-full">
       <div
-        className="flex justify-end gap-2 p-4 sticky top-0 bg-background/30 backdrop-blur-lg"
+        className="flex justify-end gap-2 p-4 sticky top-0 border-b"
       >
         <Popover>
           <PopoverTrigger asChild>
@@ -53,26 +53,35 @@ export default function Chat() {
           </PopoverContent>
         </Popover>
       </div>
-      <div className="p-4">
-        <div>
-          {
-            messages.map((i) => (
-              <ChatListItem
-                key={i.id}
-                from={i.from}
-                className={`w-10/12 mb-4 ${i.from === 'user' && 'ml-auto'}`}
-              >
-                {i.content}
-              </ChatListItem>
-            ))
-          }
-        </div>
+      <div
+        className="p-4 overflow-y-auto"
+        style={{
+          height: 'calc(100vh - 186px)',
+        }}
+      >
+        {
+          messages.map((i) => (
+            <ChatListItem
+              key={i.id}
+              from={i.from}
+              className={`w-10/12 mb-4 ${i.from === 'user' && 'ml-auto'}`}
+            >
+              {i.content}
+            </ChatListItem>
+          ))
+        }
+      </div>
+      <div className="p-4 border-t top-full">
         <Textarea
           placeholder="Type your message here."
           onInput={onInput}
           value={inputVal}
+          onKeyDown={onEnter}
+          className="resize-none"
+          spellCheck={false}
+          autoCorrect="off"
+          autoCapitalize="off"
         />
-        <Button className="mt-4" onClick={onSend}>Send</Button>
       </div>
     </div>
   )

@@ -6,6 +6,7 @@ type IUITheme = "dark" | "light"
 
 export interface IAppConfigSlice {
   theme: IUITheme;
+  isSidebarOpen: boolean;
 }
 
 const SAVED_THEME_KEY = "APP_THEME"
@@ -30,6 +31,7 @@ const saveTheme = (t: IUITheme) => {
 
 const initialState: IAppConfigSlice = {
   theme: getInitialTheme(),
+  isSidebarOpen: true,
 };
 
 const name = 'appConfig';
@@ -42,6 +44,12 @@ const slice = createSlice({
       state.theme = action.payload;
 
       saveTheme(state.theme)
+    },
+    closeSidebar(state) {
+      state.isSidebarOpen = false;
+    },
+    openSidebar(state) {
+      state.isSidebarOpen = true;
     },
     toggleTheme(state) {
       if (state.theme === "dark") {
