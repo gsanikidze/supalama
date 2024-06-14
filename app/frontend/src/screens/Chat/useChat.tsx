@@ -1,6 +1,7 @@
 import { ChangeEvent, useCallback, useEffect, useState } from "react";
 import { GetFirstModel, SendMessage } from "wailsjs/go/main/App";
 import { ollama } from "wailsjs/go/models";
+import { EventsOff, EventsOn } from "wailsjs/runtime"
 
 export default function useChat(){
   const [selectedModel, selectModel] = useState<ollama.LocalModel>()
@@ -8,9 +9,9 @@ export default function useChat(){
   const [modelOptions, setModelOptions] = useState<Partial<ollama.ModelOptions>>({})
   const [chatContext, setChatContext] = useState<number[]>([])
   const [messages, setMessages] = useState<{
-    from: 'user' | 'bot';
-    content: string;
-    id: string;
+    From: 'user' | 'bot';
+    Text: string;
+    ID: string;
   }[]>([])
 
   useEffect(() => {
@@ -30,27 +31,7 @@ export default function useChat(){
       modelOptions as ollama.ModelOptions,
       chatContext,
       selectedModel!.name,
-    ).then(({ Messages, Context }) => {
-
-      setMessages((st) => {
-
-        const newMessages = [
-          ...st,
-        ]
-
-        Messages.forEach((msg: any) => {
-          newMessages.push({
-            from: msg.From,
-            content: msg.Text,
-            id: msg.ID,
-          })
-        })
-
-        return newMessages
-      })
-
-      setChatContext(Context)
-    })
+    )
 
     setInputVal('')    
   }, [inputVal, chatContext])
@@ -61,6 +42,40 @@ export default function useChat(){
       onSend()
     }
   }, [onSend])
+
+  useEffect(() => {
+    EventsOn("NEW_MESSAGE", (data) => {
+      setMessages((st) => [...st, data])
+    })
+
+    return () => {
+      EventsOff("NEW_MESSAGE")
+    }
+  }, [])
+
+  useEffect(() => {
+    EventsOn("NEW_CONTEXT", setChatContext)
+
+    return () => {
+      EventsOff("NEW_CONTEXT")
+    }
+  }, [])
+
+  useEffect(() => {
+    EventsOn("MESSAGE_UPDATE", (data) => {
+      setMessages((st) => st.map((m) => {
+        if (m.ID === data.ID) {
+          return data
+        }
+
+        return m
+      }))
+    })
+
+    return () => {
+      EventsOff("MESSAGE_UPDATE")
+    }
+  }, [])
 
   return {
     onInput,

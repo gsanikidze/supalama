@@ -2,19 +2,19 @@ package ollama
 
 import (
 	"app/env"
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
 )
 
-func Generate(args GenerateArgs) (generateResponse, error) {
-	res := generateResponse{}
+func Generate(args GenerateArgs, res chan GenerateResponse) {
 	endpoint := fmt.Sprintf("%v/api/generate", env.OllamaDefaultServer())
 
 	payload := generatePayload{
 		Model:   args.Model,
-		Stream:  false,
+		Stream:  true,
 		Options: args.Options,
 		Prompt:  args.Prompt,
 		Context: args.Context,
@@ -23,7 +23,8 @@ func Generate(args GenerateArgs) (generateResponse, error) {
 	body, err := json.Marshal(payload)
 
 	if err != nil {
-		return res, err
+		close(res)
+		return
 	}
 
 	r, err := http.Post(
@@ -33,16 +34,29 @@ func Generate(args GenerateArgs) (generateResponse, error) {
 	)
 
 	if err != nil {
-		return res, err
+		close(res)
+		return
 	}
 
 	defer r.Body.Close()
 
-	parseErr := json.NewDecoder(r.Body).Decode(&res)
+	scanner := bufio.NewScanner(r.Body)
 
-	if parseErr != nil {
-		return res, parseErr
+	for scanner.Scan() {
+		chunk := GenerateResponse{}
+
+		chunkErr := json.Unmarshal(scanner.Bytes(), &chunk)
+
+		if chunkErr != nil {
+			close(res)
+			return
+		}
+
+		res <- chunk
+
+		if chunk.Done {
+			close(res)
+			return
+		}
 	}
-
-	return res, nil
 }

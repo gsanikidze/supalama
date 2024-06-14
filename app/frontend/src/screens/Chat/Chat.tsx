@@ -62,11 +62,11 @@ export default function Chat() {
         {
           messages.map((i) => (
             <ChatListItem
-              key={i.id}
-              from={i.from}
-              className={`w-10/12 mb-4 ${i.from === 'user' && 'ml-auto'}`}
+              key={i.ID}
+              from={i.From}
+              className={`w-10/12 mb-4 ${i.From === 'user' && 'ml-auto'}`}
             >
-              {i.content}
+              {i.Text}
             </ChatListItem>
           ))
         }

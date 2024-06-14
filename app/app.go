@@ -2,11 +2,13 @@ package main
 
 import (
 	"app/ollama"
+	"app/types"
 	"context"
 	"log"
 
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // App struct
@@ -30,44 +32,54 @@ func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 }
 
-type Message struct {
-	Text string
-	ID   string
-	From string
-}
-
-type Response struct {
-	Messages []Message
-	Context  []int
-}
-
 func (a *App) SendMessage(
 	text string,
 	options ollama.ModelOptions,
 	context []int,
 	model string,
-) Response {
-	res, err := ollama.Generate(
+) {
+	resChan := make(chan ollama.GenerateResponse)
+
+	go ollama.Generate(
 		ollama.GenerateArgs{
 			Prompt:  text,
 			Options: options,
 			Context: context,
 			Model:   model,
 		},
+		resChan,
 	)
 
-	if err != nil {
-		return Response{}
-	}
+	runtime.EventsEmit(
+		a.ctx,
+		"NEW_MESSAGE",
+		types.SendMessage{Text: text, ID: uuid.NewString(), From: "user"},
+	)
 
-	messages := []Message{
-		{Text: text, ID: uuid.NewString(), From: "user"},
-		{Text: res.Response, ID: uuid.NewString(), From: "bot"},
-	}
+	botMessage := types.SendMessage{Text: "", ID: uuid.NewString(), From: "bot"}
 
-	return Response{
-		Messages: messages,
-		Context:  res.Context,
+	runtime.EventsEmit(
+		a.ctx,
+		"NEW_MESSAGE",
+		botMessage,
+	)
+
+	for c := range resChan {
+		botMessage.Text += c.Response
+
+		runtime.EventsEmit(
+			a.ctx,
+			"MESSAGE_UPDATE",
+			botMessage,
+		)
+
+		if c.Done {
+			runtime.EventsEmit(
+				a.ctx,
+				"NEW_CONTEXT",
+				c.Context,
+			)
+		}
 	}
 }
 

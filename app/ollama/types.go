@@ -8,7 +8,7 @@ type generatePayload struct {
 	Context []int        `json:"context"`
 }
 
-type generateResponse struct {
+type GenerateResponse struct {
 	CreatedAt     string `json:"created_at"`
 	Model         string `json:"model"`
 	Response      string `json:"response"`
@@ -16,6 +16,7 @@ type generateResponse struct {
 	TotalDuration int    `json:"total_duration"`
 	Status        string `json:"status"`
 	Done          bool   `json:"done"`
+	DoneReason    string `json:"done_reason"`
 }
 
 type ModelOptions struct {
