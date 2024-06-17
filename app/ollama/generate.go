@@ -15,7 +15,7 @@ func Generate(args GenerateArgs, res chan GenerateResponse) {
 	payload := generatePayload{
 		Model:   args.Model,
 		Stream:  true,
-		Options: args.Options,
+		Options: *args.Options.WithDefaults(),
 		Prompt:  args.Prompt,
 		Context: args.Context,
 	}

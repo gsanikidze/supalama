@@ -60,18 +60,18 @@ export namespace ollama {
 	}
 	
 	export class ModelOptions {
-	    mirostat: number;
-	    mirostat_eta: number;
-	    mirostat_tau: number;
-	    num_ctx: number;
-	    repeat_last_n: number;
-	    repeat_penalty: number;
-	    temperature: number;
-	    seed: number;
-	    tfs_z: number;
-	    num_predict: number;
-	    top_k: number;
-	    top_p: number;
+	    mirostat?: number;
+	    mirostat_eta?: number;
+	    mirostat_tau?: number;
+	    num_ctx?: number;
+	    repeat_last_n?: number;
+	    repeat_penalty?: number;
+	    temperature?: number;
+	    seed?: number;
+	    tfs_z?: number;
+	    num_predict?: number;
+	    top_k?: number;
+	    top_p?: number;
 	
 	    static createFrom(source: any = {}) {
 	        return new ModelOptions(source);
