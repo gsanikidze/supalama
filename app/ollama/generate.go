@@ -12,10 +12,28 @@ import (
 func Generate(args GenerateArgs, res chan GenerateResponse) {
 	endpoint := fmt.Sprintf("%v/api/generate", env.OllamaDefaultServer())
 
+	options, err := args.Options.WithDefaults().Validated()
+
+	throwErr := func(err error) {
+		errMsg := err.Error()
+
+		res <- GenerateResponse{
+			Error: &errMsg,
+			Done:  true,
+		}
+
+		close(res)
+	}
+
+	if err != nil {
+		throwErr(err)
+		return
+	}
+
 	payload := generatePayload{
 		Model:   args.Model,
 		Stream:  true,
-		Options: *args.Options.WithDefaults(),
+		Options: *options,
 		Prompt:  args.Prompt,
 		Context: args.Context,
 	}
@@ -23,7 +41,7 @@ func Generate(args GenerateArgs, res chan GenerateResponse) {
 	body, err := json.Marshal(payload)
 
 	if err != nil {
-		close(res)
+		throwErr(err)
 		return
 	}
 
@@ -34,7 +52,7 @@ func Generate(args GenerateArgs, res chan GenerateResponse) {
 	)
 
 	if err != nil {
-		close(res)
+		throwErr(err)
 		return
 	}
 
@@ -48,7 +66,7 @@ func Generate(args GenerateArgs, res chan GenerateResponse) {
 		chunkErr := json.Unmarshal(scanner.Bytes(), &chunk)
 
 		if chunkErr != nil {
-			close(res)
+			throwErr(err)
 			return
 		}
 

@@ -1,3 +1,4 @@
+import { useToast } from "@/components/ui/use-toast";
 import { ChangeEvent, useCallback, useEffect, useState } from "react";
 import { GetFirstModel, SendMessage } from "wailsjs/go/main/App";
 import { ollama } from "wailsjs/go/models";
@@ -13,6 +14,7 @@ export default function useChat(){
     Text: string;
     ID: string;
   }[]>([])
+  const { toast } = useToast()
 
   useEffect(() => {
     GetFirstModel().then((m) => {
@@ -74,6 +76,19 @@ export default function useChat(){
 
     return () => {
       EventsOff("MESSAGE_UPDATE")
+    }
+  }, [])
+
+  useEffect(() => {
+    EventsOn("MESSAGE_ERROR", (data: string) => {
+      toast({
+        description: data,
+        variant: "destructive"
+      })
+    })
+
+    return () => {
+      EventsOff("MESSAGE_ERROR")
     }
   }, [])
 

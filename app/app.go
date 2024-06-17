@@ -74,11 +74,19 @@ func (a *App) SendMessage(
 		)
 
 		if c.Done {
-			runtime.EventsEmit(
-				a.ctx,
-				"NEW_CONTEXT",
-				c.Context,
-			)
+			if c.Error != nil {
+				runtime.EventsEmit(
+					a.ctx,
+					"MESSAGE_ERROR",
+					c.Error,
+				)
+			} else {
+				runtime.EventsEmit(
+					a.ctx,
+					"NEW_CONTEXT",
+					c.Context,
+				)
+			}
 		}
 	}
 }
