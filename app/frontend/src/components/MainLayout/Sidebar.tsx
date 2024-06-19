@@ -1,4 +1,4 @@
-import { BotMessageSquare, Drill, PanelLeftClose, PanelLeftOpen } from "lucide-react"
+import { BotMessageSquare, Drill, HeartPulse, PanelLeftClose, PanelLeftOpen } from "lucide-react"
 import Logo from "./Logo"
 import NavItem from "./NavItem"
 import ThemeToggler from "./ThemeToggler"
@@ -47,6 +47,12 @@ export default function Sidebar({ className = '', ...props }: Props) {
           icon={<Drill size={18} />}
         >
           Build Workflow
+        </NavItem>
+        <NavItem
+          route="/ollama-health-check"
+          icon={<HeartPulse size={18} />}
+        >
+          Ollama Health
         </NavItem>
       </div>
       <div className="border-t px-4 py-3 flex justify-between items-center">

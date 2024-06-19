@@ -6,4 +6,12 @@ export function GetFirstModel():Promise<ollama.LocalModel>;
 
 export function GetModels():Promise<Array<ollama.LocalModel>>;
 
+export function GetOllamaServerUrl():Promise<string>;
+
+export function IsOllamaInstalled():Promise<boolean>;
+
+export function IsOllamaRunning():Promise<boolean>;
+
 export function SendMessage(arg1:string,arg2:ollama.ModelOptions,arg3:Array<number>,arg4:string):Promise<void>;
+
+export function StartOllama():Promise<void>;

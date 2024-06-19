@@ -1,6 +1,14 @@
 package ollama
 
-import "github.com/go-playground/validator/v10"
+import (
+	"app/env"
+	"io"
+	"net/http"
+	"os/exec"
+	"runtime"
+
+	"github.com/go-playground/validator/v10"
+)
 
 func (m *ModelOptions) WithDefaults() *ModelOptions {
 	var (
@@ -78,4 +86,55 @@ func (m *ModelOptions) Validated() (*ModelOptions, error) {
 	}
 
 	return m, nil
+}
+
+func IsRunning() bool {
+	r, err := http.Get(
+		env.OllamaDefaultServer(),
+	)
+
+	if err != nil {
+		return false
+	}
+
+	defer r.Body.Close()
+
+	body, err := io.ReadAll(r.Body)
+
+	if err != nil {
+		return false
+	}
+
+	parsedBody := string(body)
+	runningMessage := "Ollama is running"
+
+	return runningMessage == parsedBody
+}
+
+func GetServerUrl() string {
+	return env.OllamaDefaultServer()
+}
+
+func IsInstalled() bool {
+	cmd := exec.Command("ollama", "-v")
+
+	output, err := cmd.Output()
+
+	if err != nil {
+		return false
+	}
+
+	return string(output) != ""
+}
+
+func Start() error {
+	macCMD := exec.Command("open", "-a", "ollama")
+	cmd := exec.Command("ollama")
+
+	switch runtime.GOOS {
+	case "darwin":
+		return macCMD.Run()
+	default:
+		return cmd.Run()
+	}
 }

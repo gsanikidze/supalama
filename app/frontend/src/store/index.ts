@@ -1,7 +1,7 @@
 export * from './store';
 export * from './useStore';
 export { default as api, tags as apiTags } from './api';
-export { counter } from './features/counter';
+export { ollama } from './features/ollama';
 export { appConfig } from './features/app-config';
-export type { ICounterSlice } from './features/counter';
+export type { IOllamaSlice } from './features/ollama';
 export type { IAppConfigSlice } from './features/app-config';

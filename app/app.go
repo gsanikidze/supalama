@@ -114,3 +114,19 @@ func (a *App) GetFirstModel() ollama.LocalModel {
 
 	return models[0]
 }
+
+func (a *App) IsOllamaRunning() bool {
+	return ollama.IsRunning()
+}
+
+func (a *App) GetOllamaServerUrl() string {
+	return ollama.GetServerUrl()
+}
+
+func (a *App) IsOllamaInstalled() bool {
+	return ollama.IsInstalled()
+}
+
+func (a *App) StartOllama() error {
+	return ollama.Start()
+}
