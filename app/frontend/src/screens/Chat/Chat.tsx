@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import useChat from "./useChat";
 import ModelSelector from "@/components/ModelSelector";
 import { SlidersHorizontal } from "lucide-react";
+import FileInput from "@/components/FileInput";
 
 export default function Chat() {
   const {
@@ -22,36 +23,39 @@ export default function Chat() {
   return (
     <div className="h-full">
       <div
-        className="flex justify-end gap-2 p-4 sticky top-0 border-b"
+        className="flex justify-between items-center gap-2 p-4 sticky top-0 border-b"
       >
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline">
-              {
-                selectedModel ? selectedModel.name : "Select Model"
-              }
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-96 p-4">
-            <ModelSelector
-              onSelect={selectModel}
-              defaultSelected={selectedModel}
-            />
-          </PopoverContent>
-        </Popover>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" size="icon">
-              <SlidersHorizontal />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-96 p-4">
-            <ModelOptions
-              onChange={setModelOptions}
-              initialValues={modelOptions}
-            />
-          </PopoverContent>
-        </Popover>
+        <FileInput onChange={console.log} />
+        <div className="flex gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline">
+                {
+                  selectedModel ? selectedModel.name : "Select Model"
+                }
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-96 p-4">
+              <ModelSelector
+                onSelect={selectModel}
+                defaultSelected={selectedModel}
+              />
+            </PopoverContent>
+          </Popover>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="icon">
+                <SlidersHorizontal />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-96 p-4">
+              <ModelOptions
+                onChange={setModelOptions}
+                initialValues={modelOptions}
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
       </div>
       <div
         className="p-4 overflow-y-auto"

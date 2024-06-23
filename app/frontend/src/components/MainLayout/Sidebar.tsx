@@ -37,7 +37,7 @@ export default function Sidebar({ className = '', ...props }: Props) {
         }}
       >
         <NavItem
-          route="/chat"
+          route="/"
           icon={<BotMessageSquare size={18} />}
         >
           Chat
