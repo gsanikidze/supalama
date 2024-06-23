@@ -1,5 +1,4 @@
 import { createBrowserRouter, Navigate, Outlet, RouterProvider } from "react-router-dom";
-import Home from "./screens/Home";
 import WorkflowBuilder from "./screens/WorkflowBuilder";
 import { useLayoutEffect, useMemo } from "react";
 import { useSelector } from "react-redux";
@@ -33,15 +32,11 @@ export default function Router() {
           ),
           children: [
             {
-              path: '/',
-              element: <Home />,
-            },
-            {
               path: '/build-workflow',
               element: <WorkflowBuilder />,
             },
             {
-              path: '/chat',
+              path: '/',
               element: <Chat />,
             },
           ]
