@@ -12,6 +12,8 @@ export function IsOllamaInstalled():Promise<boolean>;
 
 export function IsOllamaRunning():Promise<boolean>;
 
+export function OpenDirectoryDialog():Promise<Array<string>>;
+
 export function SendMessage(arg1:string,arg2:ollama.ModelOptions,arg3:Array<number>,arg4:string):Promise<void>;
 
 export function StartOllama():Promise<void>;

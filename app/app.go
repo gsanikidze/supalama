@@ -130,3 +130,9 @@ func (a *App) IsOllamaInstalled() bool {
 func (a *App) StartOllama() error {
 	return ollama.Start()
 }
+
+func (a *App) OpenDirectoryDialog() ([]string, error) {
+	selected, err := runtime.OpenMultipleFilesDialog(a.ctx, runtime.OpenDialogOptions{})
+
+	return selected, err
+}

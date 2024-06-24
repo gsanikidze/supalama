@@ -22,6 +22,10 @@ export function IsOllamaRunning() {
   return window['go']['main']['App']['IsOllamaRunning']();
 }
 
+export function OpenDirectoryDialog() {
+  return window['go']['main']['App']['OpenDirectoryDialog']();
+}
+
 export function SendMessage(arg1, arg2, arg3, arg4) {
   return window['go']['main']['App']['SendMessage'](arg1, arg2, arg3, arg4);
 }
