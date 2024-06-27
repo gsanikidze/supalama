@@ -17,5 +17,5 @@ services:
       - POSTGRES_DB=${DB_NAME}
 
 networks:
-  bs_net:
-    name: bs_net
+  supalama_net:
+    name: supalama_net
