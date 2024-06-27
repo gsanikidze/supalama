@@ -1,6 +1,6 @@
 import { useToast } from "@/components/ui/use-toast";
 import { ChangeEvent, useCallback, useEffect, useState } from "react";
-import { GetFirstModel, SendMessage } from "wailsjs/go/main/App";
+import { CreateChat, GetFirstModel, SendMessage } from "wailsjs/go/main/App";
 import { ollama } from "wailsjs/go/models";
 import { EventsOff, EventsOn } from "wailsjs/runtime"
 
@@ -15,12 +15,26 @@ export default function useChat(){
     ID: string;
   }[]>([])
   const { toast } = useToast()
+  const [chatId, setChatId] = useState<number>()
 
   useEffect(() => {
     GetFirstModel().then((m) => {
       selectModel(m)
     })
   }, [])
+
+  useEffect(() => {
+    CreateChat().then((chat) => {
+      if (chat.id) {
+        setChatId(chat.id)
+      }
+    }).catch((err: string) => {
+      toast({
+        description: err,
+        variant: "destructive"
+      })
+    })
+  }, [toast])
 
   const onInput = useCallback((e: ChangeEvent<HTMLTextAreaElement>) => {
     e.preventDefault()

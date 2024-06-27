@@ -1,7 +1,7 @@
 import { HTMLAttributes, useMemo } from "react";
 
 import Tool from "./Tool";
-import { Bot, MessageSquareCode, MessageSquareText, Paperclip } from "lucide-react";
+import { MessageSquareCode, MessageSquareText, Paperclip } from "lucide-react";
 
 interface Props extends HTMLAttributes<HTMLDivElement> {}
 

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"api/ent"
+	"app/chat"
 	"app/ollama"
 	"app/types"
 	"context"
@@ -135,4 +137,8 @@ func (a *App) OpenDirectoryDialog() ([]string, error) {
 	selected, err := runtime.OpenMultipleFilesDialog(a.ctx, runtime.OpenDialogOptions{})
 
 	return selected, err
+}
+
+func (a *App) CreateChat() (*ent.Chat, error) {
+	return chat.Create()
 }
