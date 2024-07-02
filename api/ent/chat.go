@@ -4,7 +4,7 @@ package ent
 
 import (
 	"api/ent/chat"
-	"encoding/json"
+	"api/ent/chatcontext"
 	"fmt"
 	"strings"
 	"time"
@@ -20,9 +20,41 @@ type Chat struct {
 	ID int `json:"id,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
-	// Context holds the value of the "context" field.
-	Context      []int `json:"context,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the ChatQuery when eager-loading is set.
+	Edges        ChatEdges `json:"edges"`
 	selectValues sql.SelectValues
+}
+
+// ChatEdges holds the relations/edges for other nodes in the graph.
+type ChatEdges struct {
+	// Messages holds the value of the messages edge.
+	Messages []*Message `json:"messages,omitempty"`
+	// Context holds the value of the context edge.
+	Context *ChatContext `json:"context,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [2]bool
+}
+
+// MessagesOrErr returns the Messages value or an error if the edge
+// was not loaded in eager-loading.
+func (e ChatEdges) MessagesOrErr() ([]*Message, error) {
+	if e.loadedTypes[0] {
+		return e.Messages, nil
+	}
+	return nil, &NotLoadedError{edge: "messages"}
+}
+
+// ContextOrErr returns the Context value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ChatEdges) ContextOrErr() (*ChatContext, error) {
+	if e.Context != nil {
+		return e.Context, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: chatcontext.Label}
+	}
+	return nil, &NotLoadedError{edge: "context"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -30,8 +62,6 @@ func (*Chat) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case chat.FieldContext:
-			values[i] = new([]byte)
 		case chat.FieldID:
 			values[i] = new(sql.NullInt64)
 		case chat.FieldCreatedAt:
@@ -63,14 +93,6 @@ func (c *Chat) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				c.CreatedAt = value.Time
 			}
-		case chat.FieldContext:
-			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field context", values[i])
-			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &c.Context); err != nil {
-					return fmt.Errorf("unmarshal field context: %w", err)
-				}
-			}
 		default:
 			c.selectValues.Set(columns[i], values[i])
 		}
@@ -82,6 +104,16 @@ func (c *Chat) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (c *Chat) Value(name string) (ent.Value, error) {
 	return c.selectValues.Get(name)
+}
+
+// QueryMessages queries the "messages" edge of the Chat entity.
+func (c *Chat) QueryMessages() *MessageQuery {
+	return NewChatClient(c.config).QueryMessages(c)
+}
+
+// QueryContext queries the "context" edge of the Chat entity.
+func (c *Chat) QueryContext() *ChatContextQuery {
+	return NewChatClient(c.config).QueryContext(c)
 }
 
 // Update returns a builder for updating this Chat.
@@ -109,9 +141,6 @@ func (c *Chat) String() string {
 	builder.WriteString(fmt.Sprintf("id=%v, ", c.ID))
 	builder.WriteString("created_at=")
 	builder.WriteString(c.CreatedAt.Format(time.ANSIC))
-	builder.WriteString(", ")
-	builder.WriteString("context=")
-	builder.WriteString(fmt.Sprintf("%v", c.Context))
 	builder.WriteByte(')')
 	return builder.String()
 }

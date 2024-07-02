@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"entgo.io/ent"
+	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 )
 
@@ -15,11 +16,12 @@ func (Chat) Fields() []ent.Field {
 	return []ent.Field{
 		field.Time("created_at").
 			Default(time.Now),
-		field.JSON("context", []int{}).
-			Default([]int{}),
 	}
 }
 
 func (Chat) Edges() []ent.Edge {
-	return nil
+	return []ent.Edge{
+		edge.To("messages", Message.Type),
+		edge.To("context", ChatContext.Type).Unique(),
+	}
 }

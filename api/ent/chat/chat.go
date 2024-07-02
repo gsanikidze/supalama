@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 const (
@@ -15,17 +16,32 @@ const (
 	FieldID = "id"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
-	// FieldContext holds the string denoting the context field in the database.
-	FieldContext = "context"
+	// EdgeMessages holds the string denoting the messages edge name in mutations.
+	EdgeMessages = "messages"
+	// EdgeContext holds the string denoting the context edge name in mutations.
+	EdgeContext = "context"
 	// Table holds the table name of the chat in the database.
 	Table = "chats"
+	// MessagesTable is the table that holds the messages relation/edge.
+	MessagesTable = "messages"
+	// MessagesInverseTable is the table name for the Message entity.
+	// It exists in this package in order to avoid circular dependency with the "message" package.
+	MessagesInverseTable = "messages"
+	// MessagesColumn is the table column denoting the messages relation/edge.
+	MessagesColumn = "chat_messages"
+	// ContextTable is the table that holds the context relation/edge.
+	ContextTable = "chat_contexts"
+	// ContextInverseTable is the table name for the ChatContext entity.
+	// It exists in this package in order to avoid circular dependency with the "chatcontext" package.
+	ContextInverseTable = "chat_contexts"
+	// ContextColumn is the table column denoting the context relation/edge.
+	ContextColumn = "chat_context"
 )
 
 // Columns holds all SQL columns for chat fields.
 var Columns = []string{
 	FieldID,
 	FieldCreatedAt,
-	FieldContext,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -41,8 +57,6 @@ func ValidColumn(column string) bool {
 var (
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
-	// DefaultContext holds the default value on creation for the "context" field.
-	DefaultContext []int
 )
 
 // OrderOption defines the ordering options for the Chat queries.
@@ -56,4 +70,39 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 // ByCreatedAt orders the results by the created_at field.
 func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
+}
+
+// ByMessagesCount orders the results by messages count.
+func ByMessagesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newMessagesStep(), opts...)
+	}
+}
+
+// ByMessages orders the results by messages terms.
+func ByMessages(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newMessagesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByContextField orders the results by context field.
+func ByContextField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newContextStep(), sql.OrderByField(field, opts...))
+	}
+}
+func newMessagesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(MessagesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, MessagesTable, MessagesColumn),
+	)
+}
+func newContextStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ContextInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, false, ContextTable, ContextColumn),
+	)
 }

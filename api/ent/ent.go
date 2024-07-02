@@ -4,6 +4,8 @@ package ent
 
 import (
 	"api/ent/chat"
+	"api/ent/chatcontext"
+	"api/ent/message"
 	"context"
 	"errors"
 	"fmt"
@@ -73,7 +75,9 @@ var (
 func checkColumn(table, column string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			chat.Table: chat.ValidColumn,
+			chat.Table:        chat.ValidColumn,
+			chatcontext.Table: chatcontext.ValidColumn,
+			message.Table:     message.ValidColumn,
 		})
 	})
 	return columnCheck(table, column)

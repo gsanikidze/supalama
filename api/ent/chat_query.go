@@ -4,8 +4,11 @@ package ent
 
 import (
 	"api/ent/chat"
+	"api/ent/chatcontext"
+	"api/ent/message"
 	"api/ent/predicate"
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"math"
 
@@ -17,10 +20,12 @@ import (
 // ChatQuery is the builder for querying Chat entities.
 type ChatQuery struct {
 	config
-	ctx        *QueryContext
-	order      []chat.OrderOption
-	inters     []Interceptor
-	predicates []predicate.Chat
+	ctx          *QueryContext
+	order        []chat.OrderOption
+	inters       []Interceptor
+	predicates   []predicate.Chat
+	withMessages *MessageQuery
+	withContext  *ChatContextQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -55,6 +60,50 @@ func (cq *ChatQuery) Unique(unique bool) *ChatQuery {
 func (cq *ChatQuery) Order(o ...chat.OrderOption) *ChatQuery {
 	cq.order = append(cq.order, o...)
 	return cq
+}
+
+// QueryMessages chains the current query on the "messages" edge.
+func (cq *ChatQuery) QueryMessages() *MessageQuery {
+	query := (&MessageClient{config: cq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := cq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := cq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(chat.Table, chat.FieldID, selector),
+			sqlgraph.To(message.Table, message.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, chat.MessagesTable, chat.MessagesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(cq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryContext chains the current query on the "context" edge.
+func (cq *ChatQuery) QueryContext() *ChatContextQuery {
+	query := (&ChatContextClient{config: cq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := cq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := cq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(chat.Table, chat.FieldID, selector),
+			sqlgraph.To(chatcontext.Table, chatcontext.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, chat.ContextTable, chat.ContextColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(cq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // First returns the first Chat entity from the query.
@@ -244,15 +293,39 @@ func (cq *ChatQuery) Clone() *ChatQuery {
 		return nil
 	}
 	return &ChatQuery{
-		config:     cq.config,
-		ctx:        cq.ctx.Clone(),
-		order:      append([]chat.OrderOption{}, cq.order...),
-		inters:     append([]Interceptor{}, cq.inters...),
-		predicates: append([]predicate.Chat{}, cq.predicates...),
+		config:       cq.config,
+		ctx:          cq.ctx.Clone(),
+		order:        append([]chat.OrderOption{}, cq.order...),
+		inters:       append([]Interceptor{}, cq.inters...),
+		predicates:   append([]predicate.Chat{}, cq.predicates...),
+		withMessages: cq.withMessages.Clone(),
+		withContext:  cq.withContext.Clone(),
 		// clone intermediate query.
 		sql:  cq.sql.Clone(),
 		path: cq.path,
 	}
+}
+
+// WithMessages tells the query-builder to eager-load the nodes that are connected to
+// the "messages" edge. The optional arguments are used to configure the query builder of the edge.
+func (cq *ChatQuery) WithMessages(opts ...func(*MessageQuery)) *ChatQuery {
+	query := (&MessageClient{config: cq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	cq.withMessages = query
+	return cq
+}
+
+// WithContext tells the query-builder to eager-load the nodes that are connected to
+// the "context" edge. The optional arguments are used to configure the query builder of the edge.
+func (cq *ChatQuery) WithContext(opts ...func(*ChatContextQuery)) *ChatQuery {
+	query := (&ChatContextClient{config: cq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	cq.withContext = query
+	return cq
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -331,8 +404,12 @@ func (cq *ChatQuery) prepareQuery(ctx context.Context) error {
 
 func (cq *ChatQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Chat, error) {
 	var (
-		nodes = []*Chat{}
-		_spec = cq.querySpec()
+		nodes       = []*Chat{}
+		_spec       = cq.querySpec()
+		loadedTypes = [2]bool{
+			cq.withMessages != nil,
+			cq.withContext != nil,
+		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Chat).scanValues(nil, columns)
@@ -340,6 +417,7 @@ func (cq *ChatQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Chat, e
 	_spec.Assign = func(columns []string, values []any) error {
 		node := &Chat{config: cq.config}
 		nodes = append(nodes, node)
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	for i := range hooks {
@@ -351,7 +429,80 @@ func (cq *ChatQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Chat, e
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+	if query := cq.withMessages; query != nil {
+		if err := cq.loadMessages(ctx, query, nodes,
+			func(n *Chat) { n.Edges.Messages = []*Message{} },
+			func(n *Chat, e *Message) { n.Edges.Messages = append(n.Edges.Messages, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := cq.withContext; query != nil {
+		if err := cq.loadContext(ctx, query, nodes, nil,
+			func(n *Chat, e *ChatContext) { n.Edges.Context = e }); err != nil {
+			return nil, err
+		}
+	}
 	return nodes, nil
+}
+
+func (cq *ChatQuery) loadMessages(ctx context.Context, query *MessageQuery, nodes []*Chat, init func(*Chat), assign func(*Chat, *Message)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Chat)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.Message(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(chat.MessagesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.chat_messages
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "chat_messages" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "chat_messages" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (cq *ChatQuery) loadContext(ctx context.Context, query *ChatContextQuery, nodes []*Chat, init func(*Chat), assign func(*Chat, *ChatContext)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Chat)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+	}
+	query.withFKs = true
+	query.Where(predicate.ChatContext(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(chat.ContextColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.chat_context
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "chat_context" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "chat_context" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
 }
 
 func (cq *ChatQuery) sqlCount(ctx context.Context) (int, error) {

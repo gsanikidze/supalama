@@ -8,3 +8,9 @@ import (
 
 // Chat is the predicate function for chat builders.
 type Chat func(*sql.Selector)
+
+// ChatContext is the predicate function for chatcontext builders.
+type ChatContext func(*sql.Selector)
+
+// Message is the predicate function for message builders.
+type Message func(*sql.Selector)

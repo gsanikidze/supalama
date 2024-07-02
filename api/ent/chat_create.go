@@ -4,6 +4,8 @@ package ent
 
 import (
 	"api/ent/chat"
+	"api/ent/chatcontext"
+	"api/ent/message"
 	"context"
 	"errors"
 	"fmt"
@@ -34,10 +36,38 @@ func (cc *ChatCreate) SetNillableCreatedAt(t *time.Time) *ChatCreate {
 	return cc
 }
 
-// SetContext sets the "context" field.
-func (cc *ChatCreate) SetContext(i []int) *ChatCreate {
-	cc.mutation.SetContext(i)
+// AddMessageIDs adds the "messages" edge to the Message entity by IDs.
+func (cc *ChatCreate) AddMessageIDs(ids ...int) *ChatCreate {
+	cc.mutation.AddMessageIDs(ids...)
 	return cc
+}
+
+// AddMessages adds the "messages" edges to the Message entity.
+func (cc *ChatCreate) AddMessages(m ...*Message) *ChatCreate {
+	ids := make([]int, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return cc.AddMessageIDs(ids...)
+}
+
+// SetContextID sets the "context" edge to the ChatContext entity by ID.
+func (cc *ChatCreate) SetContextID(id int) *ChatCreate {
+	cc.mutation.SetContextID(id)
+	return cc
+}
+
+// SetNillableContextID sets the "context" edge to the ChatContext entity by ID if the given value is not nil.
+func (cc *ChatCreate) SetNillableContextID(id *int) *ChatCreate {
+	if id != nil {
+		cc = cc.SetContextID(*id)
+	}
+	return cc
+}
+
+// SetContext sets the "context" edge to the ChatContext entity.
+func (cc *ChatCreate) SetContext(c *ChatContext) *ChatCreate {
+	return cc.SetContextID(c.ID)
 }
 
 // Mutation returns the ChatMutation object of the builder.
@@ -79,19 +109,12 @@ func (cc *ChatCreate) defaults() {
 		v := chat.DefaultCreatedAt()
 		cc.mutation.SetCreatedAt(v)
 	}
-	if _, ok := cc.mutation.Context(); !ok {
-		v := chat.DefaultContext
-		cc.mutation.SetContext(v)
-	}
 }
 
 // check runs all checks and user-defined validators on the builder.
 func (cc *ChatCreate) check() error {
 	if _, ok := cc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Chat.created_at"`)}
-	}
-	if _, ok := cc.mutation.Context(); !ok {
-		return &ValidationError{Name: "context", err: errors.New(`ent: missing required field "Chat.context"`)}
 	}
 	return nil
 }
@@ -123,9 +146,37 @@ func (cc *ChatCreate) createSpec() (*Chat, *sqlgraph.CreateSpec) {
 		_spec.SetField(chat.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if value, ok := cc.mutation.Context(); ok {
-		_spec.SetField(chat.FieldContext, field.TypeJSON, value)
-		_node.Context = value
+	if nodes := cc.mutation.MessagesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   chat.MessagesTable,
+			Columns: []string{chat.MessagesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(message.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := cc.mutation.ContextIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   chat.ContextTable,
+			Columns: []string{chat.ContextColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(chatcontext.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }

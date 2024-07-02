@@ -4,6 +4,8 @@ package ent
 
 import (
 	"api/ent/chat"
+	"api/ent/chatcontext"
+	"api/ent/message"
 	"api/ent/predicate"
 	"context"
 	"errors"
@@ -12,7 +14,6 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 )
 
@@ -43,21 +44,70 @@ func (cu *ChatUpdate) SetNillableCreatedAt(t *time.Time) *ChatUpdate {
 	return cu
 }
 
-// SetContext sets the "context" field.
-func (cu *ChatUpdate) SetContext(i []int) *ChatUpdate {
-	cu.mutation.SetContext(i)
+// AddMessageIDs adds the "messages" edge to the Message entity by IDs.
+func (cu *ChatUpdate) AddMessageIDs(ids ...int) *ChatUpdate {
+	cu.mutation.AddMessageIDs(ids...)
 	return cu
 }
 
-// AppendContext appends i to the "context" field.
-func (cu *ChatUpdate) AppendContext(i []int) *ChatUpdate {
-	cu.mutation.AppendContext(i)
+// AddMessages adds the "messages" edges to the Message entity.
+func (cu *ChatUpdate) AddMessages(m ...*Message) *ChatUpdate {
+	ids := make([]int, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return cu.AddMessageIDs(ids...)
+}
+
+// SetContextID sets the "context" edge to the ChatContext entity by ID.
+func (cu *ChatUpdate) SetContextID(id int) *ChatUpdate {
+	cu.mutation.SetContextID(id)
 	return cu
+}
+
+// SetNillableContextID sets the "context" edge to the ChatContext entity by ID if the given value is not nil.
+func (cu *ChatUpdate) SetNillableContextID(id *int) *ChatUpdate {
+	if id != nil {
+		cu = cu.SetContextID(*id)
+	}
+	return cu
+}
+
+// SetContext sets the "context" edge to the ChatContext entity.
+func (cu *ChatUpdate) SetContext(c *ChatContext) *ChatUpdate {
+	return cu.SetContextID(c.ID)
 }
 
 // Mutation returns the ChatMutation object of the builder.
 func (cu *ChatUpdate) Mutation() *ChatMutation {
 	return cu.mutation
+}
+
+// ClearMessages clears all "messages" edges to the Message entity.
+func (cu *ChatUpdate) ClearMessages() *ChatUpdate {
+	cu.mutation.ClearMessages()
+	return cu
+}
+
+// RemoveMessageIDs removes the "messages" edge to Message entities by IDs.
+func (cu *ChatUpdate) RemoveMessageIDs(ids ...int) *ChatUpdate {
+	cu.mutation.RemoveMessageIDs(ids...)
+	return cu
+}
+
+// RemoveMessages removes "messages" edges to Message entities.
+func (cu *ChatUpdate) RemoveMessages(m ...*Message) *ChatUpdate {
+	ids := make([]int, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return cu.RemoveMessageIDs(ids...)
+}
+
+// ClearContext clears the "context" edge to the ChatContext entity.
+func (cu *ChatUpdate) ClearContext() *ChatUpdate {
+	cu.mutation.ClearContext()
+	return cu
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -99,13 +149,79 @@ func (cu *ChatUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := cu.mutation.CreatedAt(); ok {
 		_spec.SetField(chat.FieldCreatedAt, field.TypeTime, value)
 	}
-	if value, ok := cu.mutation.Context(); ok {
-		_spec.SetField(chat.FieldContext, field.TypeJSON, value)
+	if cu.mutation.MessagesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   chat.MessagesTable,
+			Columns: []string{chat.MessagesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(message.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if value, ok := cu.mutation.AppendedContext(); ok {
-		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, chat.FieldContext, value)
-		})
+	if nodes := cu.mutation.RemovedMessagesIDs(); len(nodes) > 0 && !cu.mutation.MessagesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   chat.MessagesTable,
+			Columns: []string{chat.MessagesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(message.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cu.mutation.MessagesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   chat.MessagesTable,
+			Columns: []string{chat.MessagesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(message.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if cu.mutation.ContextCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   chat.ContextTable,
+			Columns: []string{chat.ContextColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(chatcontext.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cu.mutation.ContextIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   chat.ContextTable,
+			Columns: []string{chat.ContextColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(chatcontext.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, cu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -141,21 +257,70 @@ func (cuo *ChatUpdateOne) SetNillableCreatedAt(t *time.Time) *ChatUpdateOne {
 	return cuo
 }
 
-// SetContext sets the "context" field.
-func (cuo *ChatUpdateOne) SetContext(i []int) *ChatUpdateOne {
-	cuo.mutation.SetContext(i)
+// AddMessageIDs adds the "messages" edge to the Message entity by IDs.
+func (cuo *ChatUpdateOne) AddMessageIDs(ids ...int) *ChatUpdateOne {
+	cuo.mutation.AddMessageIDs(ids...)
 	return cuo
 }
 
-// AppendContext appends i to the "context" field.
-func (cuo *ChatUpdateOne) AppendContext(i []int) *ChatUpdateOne {
-	cuo.mutation.AppendContext(i)
+// AddMessages adds the "messages" edges to the Message entity.
+func (cuo *ChatUpdateOne) AddMessages(m ...*Message) *ChatUpdateOne {
+	ids := make([]int, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return cuo.AddMessageIDs(ids...)
+}
+
+// SetContextID sets the "context" edge to the ChatContext entity by ID.
+func (cuo *ChatUpdateOne) SetContextID(id int) *ChatUpdateOne {
+	cuo.mutation.SetContextID(id)
 	return cuo
+}
+
+// SetNillableContextID sets the "context" edge to the ChatContext entity by ID if the given value is not nil.
+func (cuo *ChatUpdateOne) SetNillableContextID(id *int) *ChatUpdateOne {
+	if id != nil {
+		cuo = cuo.SetContextID(*id)
+	}
+	return cuo
+}
+
+// SetContext sets the "context" edge to the ChatContext entity.
+func (cuo *ChatUpdateOne) SetContext(c *ChatContext) *ChatUpdateOne {
+	return cuo.SetContextID(c.ID)
 }
 
 // Mutation returns the ChatMutation object of the builder.
 func (cuo *ChatUpdateOne) Mutation() *ChatMutation {
 	return cuo.mutation
+}
+
+// ClearMessages clears all "messages" edges to the Message entity.
+func (cuo *ChatUpdateOne) ClearMessages() *ChatUpdateOne {
+	cuo.mutation.ClearMessages()
+	return cuo
+}
+
+// RemoveMessageIDs removes the "messages" edge to Message entities by IDs.
+func (cuo *ChatUpdateOne) RemoveMessageIDs(ids ...int) *ChatUpdateOne {
+	cuo.mutation.RemoveMessageIDs(ids...)
+	return cuo
+}
+
+// RemoveMessages removes "messages" edges to Message entities.
+func (cuo *ChatUpdateOne) RemoveMessages(m ...*Message) *ChatUpdateOne {
+	ids := make([]int, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return cuo.RemoveMessageIDs(ids...)
+}
+
+// ClearContext clears the "context" edge to the ChatContext entity.
+func (cuo *ChatUpdateOne) ClearContext() *ChatUpdateOne {
+	cuo.mutation.ClearContext()
+	return cuo
 }
 
 // Where appends a list predicates to the ChatUpdate builder.
@@ -227,13 +392,79 @@ func (cuo *ChatUpdateOne) sqlSave(ctx context.Context) (_node *Chat, err error) 
 	if value, ok := cuo.mutation.CreatedAt(); ok {
 		_spec.SetField(chat.FieldCreatedAt, field.TypeTime, value)
 	}
-	if value, ok := cuo.mutation.Context(); ok {
-		_spec.SetField(chat.FieldContext, field.TypeJSON, value)
+	if cuo.mutation.MessagesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   chat.MessagesTable,
+			Columns: []string{chat.MessagesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(message.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if value, ok := cuo.mutation.AppendedContext(); ok {
-		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, chat.FieldContext, value)
-		})
+	if nodes := cuo.mutation.RemovedMessagesIDs(); len(nodes) > 0 && !cuo.mutation.MessagesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   chat.MessagesTable,
+			Columns: []string{chat.MessagesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(message.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cuo.mutation.MessagesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   chat.MessagesTable,
+			Columns: []string{chat.MessagesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(message.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if cuo.mutation.ContextCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   chat.ContextTable,
+			Columns: []string{chat.ContextColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(chatcontext.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cuo.mutation.ContextIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   chat.ContextTable,
+			Columns: []string{chat.ContextColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(chatcontext.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &Chat{config: cuo.config}
 	_spec.Assign = _node.assignValues

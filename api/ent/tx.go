@@ -14,6 +14,10 @@ type Tx struct {
 	config
 	// Chat is the client for interacting with the Chat builders.
 	Chat *ChatClient
+	// ChatContext is the client for interacting with the ChatContext builders.
+	ChatContext *ChatContextClient
+	// Message is the client for interacting with the Message builders.
+	Message *MessageClient
 
 	// lazily loaded.
 	client     *Client
@@ -146,6 +150,8 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.Chat = NewChatClient(tx.config)
+	tx.ChatContext = NewChatContextClient(tx.config)
+	tx.Message = NewMessageClient(tx.config)
 }
 
 // txDriver wraps the given dialect.Tx with a nop dialect.Driver implementation.

@@ -12,7 +12,6 @@ var (
 	ChatsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "created_at", Type: field.TypeTime},
-		{Name: "context", Type: field.TypeJSON},
 	}
 	// ChatsTable holds the schema information for the "chats" table.
 	ChatsTable = &schema.Table{
@@ -20,11 +19,57 @@ var (
 		Columns:    ChatsColumns,
 		PrimaryKey: []*schema.Column{ChatsColumns[0]},
 	}
+	// ChatContextsColumns holds the columns for the "chat_contexts" table.
+	ChatContextsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "data", Type: field.TypeJSON},
+		{Name: "chat_context", Type: field.TypeInt, Unique: true},
+	}
+	// ChatContextsTable holds the schema information for the "chat_contexts" table.
+	ChatContextsTable = &schema.Table{
+		Name:       "chat_contexts",
+		Columns:    ChatContextsColumns,
+		PrimaryKey: []*schema.Column{ChatContextsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "chat_contexts_chats_context",
+				Columns:    []*schema.Column{ChatContextsColumns[2]},
+				RefColumns: []*schema.Column{ChatsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+	}
+	// MessagesColumns holds the columns for the "messages" table.
+	MessagesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "text", Type: field.TypeString},
+		{Name: "author", Type: field.TypeEnum, Enums: []string{"user", "bot"}},
+		{Name: "chat_messages", Type: field.TypeInt},
+	}
+	// MessagesTable holds the schema information for the "messages" table.
+	MessagesTable = &schema.Table{
+		Name:       "messages",
+		Columns:    MessagesColumns,
+		PrimaryKey: []*schema.Column{MessagesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "messages_chats_messages",
+				Columns:    []*schema.Column{MessagesColumns[4]},
+				RefColumns: []*schema.Column{ChatsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		ChatsTable,
+		ChatContextsTable,
+		MessagesTable,
 	}
 )
 
 func init() {
+	ChatContextsTable.ForeignKeys[0].RefTable = ChatsTable
+	MessagesTable.ForeignKeys[0].RefTable = ChatsTable
 }
