@@ -2,6 +2,7 @@ package main
 
 import (
 	"api/ent"
+	"api/routes"
 	"app/chat"
 	"app/ollama"
 	"app/types"
@@ -35,22 +36,87 @@ func (a *App) startup(ctx context.Context) {
 }
 
 func (a *App) SendMessage(
+	chatId int,
 	text string,
 	options ollama.ModelOptions,
-	context []int,
 	model string,
 ) {
+	var currentChat *ent.Chat
+
+	if chatId != 0 {
+		c, err := chat.Find(chatId)
+
+		if err != nil {
+			runtime.EventsEmit(
+				a.ctx,
+				"MESSAGE_ERROR",
+				err,
+			)
+			return
+		}
+
+		currentChat = c
+	} else {
+		c, err := chat.Create()
+
+		if err != nil {
+			runtime.EventsEmit(
+				a.ctx,
+				"MESSAGE_ERROR",
+				err,
+			)
+			return
+		}
+
+		runtime.EventsEmit(
+			a.ctx,
+			"NEW_CHAT",
+			c.ID,
+		)
+
+		currentChat = c
+	}
+
+	chatCtx, err := chat.Context(currentChat.ID)
+
+	if err != nil {
+		runtime.EventsEmit(
+			a.ctx,
+			"MESSAGE_ERROR",
+			err,
+		)
+		return
+	}
+
 	resChan := make(chan ollama.GenerateResponse)
 
 	go ollama.Generate(
 		ollama.GenerateArgs{
 			Prompt:  text,
 			Options: options,
-			Context: context,
+			Context: chatCtx.Data,
 			Model:   model,
 		},
 		resChan,
 	)
+
+	_, userMsgErr := chat.SendMessage(
+		currentChat.ID,
+		routes.SendMessagePayload{
+			Text:    text,
+			Context: chatCtx.Data,
+			Author:  "user",
+		},
+	)
+
+	if userMsgErr != nil {
+		runtime.EventsEmit(
+			a.ctx,
+			"MESSAGE_ERROR",
+			userMsgErr.Error(),
+		)
+		return
+	}
 
 	runtime.EventsEmit(
 		a.ctx,
@@ -83,10 +149,13 @@ func (a *App) SendMessage(
 					c.Error,
 				)
 			} else {
-				runtime.EventsEmit(
-					a.ctx,
-					"NEW_CONTEXT",
-					c.Context,
+				chat.SendMessage(
+					currentChat.ID,
+					routes.SendMessagePayload{
+						Text:    botMessage.Text,
+						Author:  "bot",
+						Context: c.Context,
+					},
 				)
 			}
 		}
@@ -137,8 +206,4 @@ func (a *App) OpenDirectoryDialog() ([]string, error) {
 	selected, err := runtime.OpenMultipleFilesDialog(a.ctx, runtime.OpenDialogOptions{})
 
 	return selected, err
-}
-
-func (a *App) CreateChat() (*ent.Chat, error) {
-	return chat.Create()
 }

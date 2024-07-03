@@ -22,7 +22,7 @@ func New() *fiber.App {
 	chatRoutes.Post("/", CreateChat)
 	chatRoutes.Get("/:id", FindChat)
 	chatRoutes.Get("/context/:id", FindChatContext)
-	chatRoutes.Put("/:id", SendMessage)
+	chatRoutes.Post("/message/:id", SendMessage)
 
 	return app
 }

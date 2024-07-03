@@ -3,6 +3,7 @@ package routes
 import (
 	"api/ent/chat"
 	"api/ent/chatcontext"
+	"api/ent/message"
 	"api/helpers"
 
 	"github.com/gofiber/fiber/v2"
@@ -91,6 +92,12 @@ func FindChatContext(c *fiber.Ctx) error {
 	return c.JSON(chatContext)
 }
 
+type SendMessagePayload struct {
+	Text    string         `json:"text"`
+	Context []int          `json:"context"`
+	Author  message.Author `json:"author"`
+}
+
 func SendMessage(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
 
@@ -108,12 +115,7 @@ func SendMessage(c *fiber.Ctx) error {
 		})
 	}
 
-	type body struct {
-		Text    string `json:"text"`
-		Context []int  `json:"context"`
-	}
-
-	b := new(body)
+	b := new(SendMessagePayload)
 
 	if err := c.BodyParser(b); err != nil {
 		return ThrowError(c, ErrorPayload{
@@ -124,6 +126,7 @@ func SendMessage(c *fiber.Ctx) error {
 	message, err := tx.Message.Create().
 		SetText(b.Text).
 		SetChatID(id).
+		SetAuthor(b.Author).
 		Save(c.Context())
 
 	if err != nil {

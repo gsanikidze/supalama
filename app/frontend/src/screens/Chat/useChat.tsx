@@ -1,6 +1,7 @@
 import { useToast } from "@/components/ui/use-toast";
-import { ChangeEvent, useCallback, useEffect, useState } from "react";
-import { CreateChat, GetFirstModel, SendMessage } from "wailsjs/go/main/App";
+import { ChangeEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { GetFirstModel, SendMessage } from "wailsjs/go/main/App";
 import { ollama } from "wailsjs/go/models";
 import { EventsOff, EventsOn } from "wailsjs/runtime"
 
@@ -8,33 +9,20 @@ export default function useChat(){
   const [selectedModel, selectModel] = useState<ollama.LocalModel>()
   const [inputVal, setInputVal] = useState('')
   const [modelOptions, setModelOptions] = useState<Partial<ollama.ModelOptions>>({})
-  const [chatContext, setChatContext] = useState<number[]>([])
   const [messages, setMessages] = useState<{
     From: 'user' | 'bot';
     Text: string;
     ID: string;
   }[]>([])
   const { toast } = useToast()
-  const [chatId, setChatId] = useState<number>()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const chatId = useMemo(() => Number(searchParams.get('id')), [searchParams])
 
   useEffect(() => {
     GetFirstModel().then((m) => {
       selectModel(m)
     })
   }, [])
-
-  useEffect(() => {
-    CreateChat().then((chat) => {
-      if (chat.id) {
-        setChatId(chat.id)
-      }
-    }).catch((err: string) => {
-      toast({
-        description: err,
-        variant: "destructive"
-      })
-    })
-  }, [toast])
 
   const onInput = useCallback((e: ChangeEvent<HTMLTextAreaElement>) => {
     e.preventDefault()
@@ -43,14 +31,14 @@ export default function useChat(){
 
   const onSend = useCallback(() => {
     SendMessage(
+      chatId,
       inputVal, 
       modelOptions as ollama.ModelOptions,
-      chatContext,
       selectedModel!.name,
     )
 
     setInputVal('')    
-  }, [inputVal, chatContext])
+  }, [inputVal, chatId])
 
   const onEnter: React.KeyboardEventHandler<HTMLTextAreaElement> = useCallback((e) => {
     if (e.key === "Enter" && e.shiftKey === false) {
@@ -70,12 +58,14 @@ export default function useChat(){
   }, [])
 
   useEffect(() => {
-    EventsOn("NEW_CONTEXT", setChatContext)
+    EventsOn("NEW_CHAT", (data: number) => {
+      setSearchParams({ id: data.toString() })
+    })
 
     return () => {
-      EventsOff("NEW_CONTEXT")
+      EventsOff("NEW_CHAT")
     }
-  }, [])
+  }, [setSearchParams])
 
   useEffect(() => {
     EventsOn("MESSAGE_UPDATE", (data) => {

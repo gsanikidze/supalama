@@ -2,43 +2,51 @@ package chat
 
 import (
 	"api/ent"
+	"api/routes"
 	"app/env"
-	"encoding/json"
+	"app/helpers"
 	"fmt"
-	"io"
-	"net/http"
 )
 
-func Create() (*ent.Chat, error) {
-	endpoint := fmt.Sprintf("%v/chat", env.APIEndpoint())
-	r, err := http.Post(
+func Find(id int) (*ent.Chat, error) {
+	endpoint := fmt.Sprintf("%v/chat/%v", env.APIEndpoint(), id)
+	chat, err := helpers.HttpRequest[ent.Chat]("GET", endpoint, nil)
+
+	return chat, err
+}
+
+func SendMessage(id int, p routes.SendMessagePayload) (*ent.Message, error) {
+	endpoint := fmt.Sprintf("%v/chat/message/%v", env.APIEndpoint(), id)
+
+	message, err := helpers.HttpRequest[ent.Message](
+		"POST",
 		endpoint,
-		"application/json",
+		p,
+	)
+
+	return message, err
+}
+
+func Context(id int) (*ent.ChatContext, error) {
+	endpoint := fmt.Sprintf("%v/chat/context/%v", env.APIEndpoint(), id)
+
+	context, err := helpers.HttpRequest[ent.ChatContext](
+		"GET",
+		endpoint,
 		nil,
 	)
 
-	if err != nil {
-		return nil, err
-	}
+	return context, err
+}
 
-	defer r.Body.Close()
+func Create() (*ent.Chat, error) {
+	endpoint := fmt.Sprintf("%v/chat", env.APIEndpoint())
 
-	if r.StatusCode < 200 || r.StatusCode >= 300 {
-		return nil, fmt.Errorf("status code: %v", r.StatusCode)
-	}
+	chat, err := helpers.HttpRequest[ent.Chat](
+		"POST",
+		endpoint,
+		nil,
+	)
 
-	chat := &ent.Chat{}
-	body, err := io.ReadAll(r.Body)
-
-	if err != nil {
-		return nil, err
-	}
-
-	err = json.Unmarshal(body, &chat)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return chat, nil
+	return chat, err
 }
