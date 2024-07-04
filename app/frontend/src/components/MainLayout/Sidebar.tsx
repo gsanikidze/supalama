@@ -5,11 +5,13 @@ import ThemeToggler from "./ThemeToggler"
 import { useDispatch, useSelector } from "react-redux"
 import { appConfig } from "@/store"
 import { Button } from "../ui/button"
+import useSidebar from "./useSidebar"
 
 type Props = React.HtmlHTMLAttributes<HTMLDivElement>
 
 export default function Sidebar({ className = '', ...props }: Props) {
   const dispatch = useDispatch()
+  const { chats } = useSidebar()
   const { isSidebarOpen } = useSelector(appConfig.select)
 
   if (!isSidebarOpen) {
@@ -39,8 +41,9 @@ export default function Sidebar({ className = '', ...props }: Props) {
         <NavItem
           route="/"
           icon={<BotMessageSquare size={18} />}
+          subItems={chats}
         >
-          Chat
+          New Chat
         </NavItem>
         <NavItem
           route="/build-workflow"

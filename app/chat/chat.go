@@ -50,3 +50,27 @@ func Create() (*ent.Chat, error) {
 
 	return chat, err
 }
+
+func List(page, limit int) (routes.Pagination[[]*ent.Chat], error) {
+	endpoint := fmt.Sprintf("%v/chat?page=%v&limit=%v", env.APIEndpoint(), page, limit)
+
+	chats, err := helpers.HttpRequest[routes.Pagination[[]*ent.Chat]](
+		"GET",
+		endpoint,
+		nil,
+	)
+
+	return *chats, err
+}
+
+func Messages(id int) (*[]*ent.Message, error) {
+	endpoint := fmt.Sprintf("%v/chat/message/%v", env.APIEndpoint(), id)
+
+	messages, err := helpers.HttpRequest[*[]*ent.Message](
+		"GET",
+		endpoint,
+		nil,
+	)
+
+	return *messages, err
+}

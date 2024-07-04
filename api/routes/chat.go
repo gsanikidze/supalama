@@ -1,11 +1,14 @@
 package routes
 
 import (
+	"api/ent"
 	"api/ent/chat"
 	"api/ent/chatcontext"
 	"api/ent/message"
 	"api/helpers"
+	"slices"
 
+	"entgo.io/ent/dialect/sql"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -170,4 +173,87 @@ func SendMessage(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(message)
+}
+
+func GetChats(c *fiber.Ctx) error {
+	page := c.QueryInt("page")
+
+	if page < 1 {
+		page = 1
+	}
+
+	limit := c.QueryInt("limit")
+
+	if limit > 100 || limit < 1 {
+		limit = 10
+	}
+
+	offset := (page - 1) * limit
+
+	chats, err := helpers.DB.Chat.
+		Query().
+		Order(
+			chat.ByCreatedAt(
+				sql.OrderDesc(),
+			),
+		).
+		Offset(offset).
+		Limit(limit).
+		All(c.Context())
+
+	if err != nil {
+		return ThrowError(c, ErrorPayload{
+			Message: err.Error(),
+		})
+	}
+
+	total, err := helpers.DB.Chat.Query().Count(c.Context())
+
+	if err != nil {
+		return ThrowError(c, ErrorPayload{
+			Message: err.Error(),
+		})
+	}
+
+	p := Pagination[[]*ent.Chat]{
+		Page:  page,
+		Total: total,
+		Data:  chats,
+	}
+
+	return c.JSON(p)
+}
+
+func GetMessages(c *fiber.Ctx) error {
+	chatId, err := c.ParamsInt("id")
+
+	if err != nil {
+		return ThrowError(c, ErrorPayload{
+			Message: err.Error(),
+		})
+	}
+
+	messages, err := helpers.DB.Message.
+		Query().
+		Where(
+			message.HasChatWith(chat.IDEQ(chatId)),
+		).
+		Order(
+			message.ByCreatedAt(
+				sql.OrderDesc(),
+			),
+		).
+		All(c.Context())
+
+	if err != nil {
+		return ThrowError(c, ErrorPayload{
+			Message: err.Error(),
+		})
+	}
+
+	slices.SortFunc(messages, func(a, b *ent.Message) int {
+		return a.CreatedAt.Compare(b.CreatedAt)
+	})
+
+	return c.JSON(messages)
 }

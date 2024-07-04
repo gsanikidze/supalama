@@ -20,9 +20,11 @@ func New() *fiber.App {
 
 	chatRoutes := apiRoute.Group("/chat")
 	chatRoutes.Post("/", CreateChat)
+	chatRoutes.Get("/", GetChats)
 	chatRoutes.Get("/:id", FindChat)
 	chatRoutes.Get("/context/:id", FindChatContext)
 	chatRoutes.Post("/message/:id", SendMessage)
+	chatRoutes.Get("/message/:id", GetMessages)
 
 	return app
 }

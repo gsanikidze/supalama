@@ -1,11 +1,11 @@
 import { useToast } from "@/components/ui/use-toast";
-import { ChangeEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { GetFirstModel, SendMessage } from "wailsjs/go/main/App";
+import { GetChatMessages, GetFirstModel, SendMessage } from "wailsjs/go/main/App";
 import { ollama } from "wailsjs/go/models";
 import { EventsOff, EventsOn } from "wailsjs/runtime"
 
-export default function useChat(){
+export default function useChat() {
   const [selectedModel, selectModel] = useState<ollama.LocalModel>()
   const [inputVal, setInputVal] = useState('')
   const [modelOptions, setModelOptions] = useState<Partial<ollama.ModelOptions>>({})
@@ -16,7 +16,38 @@ export default function useChat(){
   }[]>([])
   const { toast } = useToast()
   const [searchParams, setSearchParams] = useSearchParams()
-  const chatId = useMemo(() => Number(searchParams.get('id')), [searchParams])
+  const chatId = useMemo(() => Number(searchParams.get('id')) || 0, [searchParams])
+  const chatListRef = useRef<HTMLDivElement>(null)
+
+  const scrollDown = useCallback(() => {
+    if (chatListRef.current) {
+      chatListRef.current.scrollTo({
+        top: chatListRef.current.scrollHeight,
+        behavior: "smooth",
+      })
+    }
+  }, [chatListRef])
+
+  const fetchMessages = useCallback(async (id: number) => {
+    if (id) {
+      try {
+        const res = await GetChatMessages(id)
+
+        setMessages(res.map((i: any) => ({
+          From: i.author,
+          Text: i.text,
+          ID: i.id
+        })))
+      } catch (e) {
+        toast({
+          description: e as any,
+          variant: "destructive"
+        })
+      }
+    } else {
+      setMessages([])
+    }
+  }, [toast])
 
   useEffect(() => {
     GetFirstModel().then((m) => {
@@ -32,12 +63,12 @@ export default function useChat(){
   const onSend = useCallback(() => {
     SendMessage(
       chatId,
-      inputVal, 
+      inputVal,
       modelOptions as ollama.ModelOptions,
       selectedModel!.name,
     )
 
-    setInputVal('')    
+    setInputVal('')
   }, [inputVal, chatId])
 
   const onEnter: React.KeyboardEventHandler<HTMLTextAreaElement> = useCallback((e) => {
@@ -96,6 +127,16 @@ export default function useChat(){
     }
   }, [])
 
+  useEffect(() => {
+    setMessages([])
+  }, [chatId])
+
+  useEffect(() => {
+    fetchMessages(chatId)
+  }, [fetchMessages, chatId])
+
+  useEffect(scrollDown, [scrollDown, messages])
+
   return {
     onInput,
     inputVal,
@@ -104,6 +145,7 @@ export default function useChat(){
     messages,
     selectModel,
     selectedModel,
-    onEnter
+    onEnter,
+    chatListRef,
   };
 }

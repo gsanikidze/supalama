@@ -18,6 +18,7 @@ export default function Chat() {
     selectModel,
     selectedModel,
     onEnter,
+    chatListRef,
   } = useChat()
 
   return (
@@ -62,6 +63,7 @@ export default function Chat() {
         style={{
           height: 'calc(100vh - 186px)',
         }}
+        ref={chatListRef}
       >
         {
           messages.map((i) => (

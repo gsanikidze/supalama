@@ -207,3 +207,11 @@ func (a *App) OpenDirectoryDialog() ([]string, error) {
 
 	return selected, err
 }
+
+func (a *App) GetChats(page, limit int) (routes.Pagination[[]*ent.Chat], error) {
+	return chat.List(page, limit)
+}
+
+func (a *App) GetChatMessages(chatId int) (*[]*ent.Message, error) {
+	return chat.Messages(chatId)
+}
