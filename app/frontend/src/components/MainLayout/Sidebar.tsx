@@ -1,18 +1,24 @@
-import { BotMessageSquare, Drill, HeartPulse, PanelLeftClose, PanelLeftOpen } from "lucide-react"
-import Logo from "./Logo"
-import NavItem from "./NavItem"
-import ThemeToggler from "./ThemeToggler"
-import { useDispatch, useSelector } from "react-redux"
-import { appConfig } from "@/store"
-import { Button } from "../ui/button"
-import useSidebar from "./useSidebar"
+import {
+  BotMessageSquare,
+  Drill,
+  HeartPulse,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from "lucide-react";
+import Logo from "./Logo";
+import NavItem from "./NavItem";
+import ThemeToggler from "./ThemeToggler";
+import { useDispatch, useSelector } from "react-redux";
+import { appConfig } from "@/store";
+import { Button } from "../ui/button";
+import useSidebar from "./useSidebar";
 
-type Props = React.HtmlHTMLAttributes<HTMLDivElement>
+type Props = React.HtmlHTMLAttributes<HTMLDivElement>;
 
-export default function Sidebar({ className = '', ...props }: Props) {
-  const dispatch = useDispatch()
-  const { chats } = useSidebar()
-  const { isSidebarOpen } = useSelector(appConfig.select)
+export default function Sidebar({ className = "", ...props }: Props) {
+  const dispatch = useDispatch();
+  const { chats } = useSidebar();
+  const { isSidebarOpen } = useSelector(appConfig.select);
 
   if (!isSidebarOpen) {
     return (
@@ -24,7 +30,7 @@ export default function Sidebar({ className = '', ...props }: Props) {
       >
         <PanelLeftOpen size={18} />
       </Button>
-    )
+    );
   }
 
   return (
@@ -35,7 +41,7 @@ export default function Sidebar({ className = '', ...props }: Props) {
       <div
         className="p-4 flex flex-col gap-4 overflow-y-auto"
         style={{
-          height: 'calc(100% - 94px)'
+          height: "calc(100% - 94px)",
         }}
       >
         <NavItem
@@ -45,16 +51,10 @@ export default function Sidebar({ className = '', ...props }: Props) {
         >
           New Chat
         </NavItem>
-        <NavItem
-          route="/build-workflow"
-          icon={<Drill size={18} />}
-        >
+        <NavItem route="/build-workflow" icon={<Drill size={18} />}>
           Build Workflow
         </NavItem>
-        <NavItem
-          route="/ollama-health-check"
-          icon={<HeartPulse size={18} />}
-        >
+        <NavItem route="/ollama-health-check" icon={<HeartPulse size={18} />}>
           Ollama Health
         </NavItem>
       </div>
@@ -67,5 +67,5 @@ export default function Sidebar({ className = '', ...props }: Props) {
         />
       </div>
     </nav>
-  )
+  );
 }

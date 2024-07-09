@@ -32,9 +32,3 @@ func ThrowError(c *fiber.Ctx, err ErrorPayload) error {
 
 	return c.Status(resp.Code).JSON(resp)
 }
-
-type Pagination[T any] struct {
-	Total int `json:"total"`
-	Page  int `json:"page"`
-	Data  T   `json:"data"`
-}

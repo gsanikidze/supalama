@@ -176,20 +176,6 @@ func SendMessage(c *fiber.Ctx) error {
 }
 
 func GetChats(c *fiber.Ctx) error {
-	page := c.QueryInt("page")
-
-	if page < 1 {
-		page = 1
-	}
-
-	limit := c.QueryInt("limit")
-
-	if limit > 100 || limit < 1 {
-		limit = 10
-	}
-
-	offset := (page - 1) * limit
-
 	chats, err := helpers.DB.Chat.
 		Query().
 		Order(
@@ -197,8 +183,6 @@ func GetChats(c *fiber.Ctx) error {
 				sql.OrderDesc(),
 			),
 		).
-		Offset(offset).
-		Limit(limit).
 		All(c.Context())
 
 	if err != nil {
@@ -207,21 +191,7 @@ func GetChats(c *fiber.Ctx) error {
 		})
 	}
 
-	total, err := helpers.DB.Chat.Query().Count(c.Context())
-
-	if err != nil {
-		return ThrowError(c, ErrorPayload{
-			Message: err.Error(),
-		})
-	}
-
-	p := Pagination[[]*ent.Chat]{
-		Page:  page,
-		Total: total,
-		Data:  chats,
-	}
-
-	return c.JSON(p)
+	return c.JSON(chats)
 }
 
 func GetMessages(c *fiber.Ctx) error {

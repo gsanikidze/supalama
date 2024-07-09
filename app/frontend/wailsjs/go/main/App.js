@@ -6,8 +6,8 @@ export function GetChatMessages(arg1) {
   return window['go']['main']['App']['GetChatMessages'](arg1);
 }
 
-export function GetChats(arg1, arg2) {
-  return window['go']['main']['App']['GetChats'](arg1, arg2);
+export function GetChats() {
+  return window['go']['main']['App']['GetChats']();
 }
 
 export function GetFirstModel() {

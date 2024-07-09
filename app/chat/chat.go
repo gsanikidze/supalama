@@ -51,16 +51,20 @@ func Create() (*ent.Chat, error) {
 	return chat, err
 }
 
-func List(page, limit int) (routes.Pagination[[]*ent.Chat], error) {
-	endpoint := fmt.Sprintf("%v/chat?page=%v&limit=%v", env.APIEndpoint(), page, limit)
+type ListResponse struct {
+	data []*ent.Chat
+}
 
-	chats, err := helpers.HttpRequest[routes.Pagination[[]*ent.Chat]](
+func List() (*[]*ent.Chat, error) {
+	endpoint := fmt.Sprintf("%v/chat", env.APIEndpoint())
+
+	chats, err := helpers.HttpRequest[[]*ent.Chat](
 		"GET",
 		endpoint,
 		nil,
 	)
 
-	return *chats, err
+	return chats, err
 }
 
 func Messages(id int) (*[]*ent.Message, error) {
